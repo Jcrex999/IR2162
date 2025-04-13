@@ -79,4 +79,81 @@ Es un bus de comunicacion que se usa en automocion, en la industria y en la domo
 
 Existe el Protocolo serie asincrono de tipo CSMA/CD, este bus es un medio compartido (miltiplexado). Todos pueden transmitir y deben monitorizar el bus para saber si pueden transmitir.
 
+## RS232 (UART)
+Es un bus de comunicacion que se usa en la comunicacion de dispositivos de baja velocidad. Se basa en la comunicacion de dos cables, que son el `TX` y el `RX`.
+
+* Transmisión de señales a media distancia
+* Velocidad de transmisión moderada
+* Envío en serie de la información
+* Estructuras complejas de transmisor y receptor (conversión serie-paralelo y viceversa)
+* Solo dos conductores imprescindibles(datos y masa)
+
+### Niveles eléctricos
+
+* RS232: 115 Kbit/s a 25 metros.
+    * Uno lógico para voltajes más negativos que -3 V
+    * Cero lógico para voltajes más positivos que +3 V
+* RS422: 100 Kbit/s a 1200 metros.
+  * Transmisión por lazo de corriente
+  * Emisor y receptor diferencial
+* RS423: 3 Kbit/s a 1200 metros. Compatibilidad
+  * Emisor no diferencial
+  * Receptor diferencial
+
+Cuando se trabaja con RS232, se necesita tener en cuenta que la comunicacion es full duplex, y que el microcontrolador tiene que tener un buffer para poder almacenar los datos que se reciben.
+
+### Protocolo
+
+* Protocolo de transmisión de una palabra:
+  * Marca (HI) (línea en reposo)
+  * Bit de inicio (LO) (siempre 1 solo bit)
+  * Bits de datos (entre 5 y 8 bits)
+  * Paridad (Par, Impar, Ninguna)
+  * Bits de stop (HI) (1 ó 2 bits)
+  * Marca (HI) (línea en reposo)
+* Frecuencia de transmisión (Baud rate)
+  * Baudios (velocidad bruta)
+  * Bits por segundo (velocidad neta)
+
+Este protocolo se basa en la transmision de una palabra, que se compone de un bit de inicio, los bits de datos, la paridad, los bits de stop y la marca.
+
+### Cable null modem
+
+Es un cable que se usa para conectar dos dispositivos que usan el protocolo RS232. Este cable se usa para conectar dos dispositivos que usan el protocolo RS232, y que se conectan directamente a traves de los cables TX y RX.
+
+* Estándar RS232 diseñado para comunicar un DTE(Data Terminal Equipment) con un DCE (Data Communications Equipment).
+* RS232C contempla la comunicación un DTE con otro a través de un cable “null modem”
+
+### El harris 8250
+Este tipo de controlador se usa para poder controlar la comunicacion de los dispositivos que usan el protocolo RS232.
+
+* Controlador fabricado por Harris que cumple con las especificaciones del estándar RS232
+* Algunos aspectos del estándar han sido interpretados de forma especial
+* Se han añadido algunas funcionalidades
+* Integrado típico en el IBM PC original
+* Su evolución ha dado lugar a los 16450, 16550 (A y B), 16650 y 16750.
+
+### Me he perdido en la clase asi que no hay mas contenido
+
+---
+
+## WiFi
+
+El WIFI viene de "Wireless Fidelity" y es un metodo de comunicacion que se usa para la comunicacion de dispositivos de alta velocidad. Este metodo de comunicacion se basa en la comunicacion de dos dispositivos, que son el `router` y el `dispositivo`.
+
+En wifi existen mejoras que fueron revisiones que se les asigno una letra, como la `a`, `b`, `g`, `n`.
+
+La variante “a” usa la banda U-NII(Unlicensed National Information Infrastructure) que no precisa de licencia y es poco usada por otros dispositivos.
+
+### Wifi 802.11a
+
+Las frecuencias asignadas a la variante “a” de WiFi se encuentran alrededor de los 5 GHz, en la zona SHF (Super High Frequency) que abarca desde 3 GHz a 30 GHz.
+
+En el rango de 5’25 a 5’35 GHz existen 12 canales de 20 MHz cada uno, de los cuales WiFi usa 8.
+
+### Wifi 802.11b
+
+Las frecuencias asignadas a la variante “b” de WiFi se encuentran alrededor de los 2’4 GHz, en la zona UHF (Ultra High Frequency) que abarca desde 300 MHz a 3 GHz.
+
+En el rango de 2’4 a 2’4835 GHz existen 14 canales, de los cuales WiFi usa 11, pero solo tres de ellos simultáneamente, puesto que cada uno ocupa 25 MHz.
 
