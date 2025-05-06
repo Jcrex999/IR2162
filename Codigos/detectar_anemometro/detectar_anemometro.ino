@@ -1,59 +1,63 @@
 #include <TimerOne.h>
 
-// Global counters to count wind pulses
+// Contadores volátiles para contar los pulsos del anemómetro
 volatile int contador_viento = 0;
 volatile int contador_viento_rafaga = 0;
 
-// Class to calculate wind speed and gusts
+// Función de interrupción para contar pulsos (cada pulso equivale a media vuelta)
+void countPulse() {
+  contador_viento++;
+  contador_viento_rafaga++;
+}
+
+// Clase para calcular la velocidad del viento y las ráfagas
 class VelocidadViento {
   public:
-    float vel_med = 0;      // Wind average speed
-    static float vel_max_racha_comparar;  // Used to compare and store maximum gust speed
-    float vel_max_racha = 0;              // Maximum gust speed
-    static int contador_num_rafagas;      // Number of 5-second cycles
+    float vel_med = 0; // Velocidad media del viento
+    static float vel_max_racha_comparar;
+    float vel_max_racha = 0;
+    static int contador_num_rafagas;
 
-    // Constructor: initializes TimerOne to measure gusts every 5 seconds
+    // Constructor: Inicializa TimerOne para medir ráfagas cada 5 segundos
     VelocidadViento() {
-      Timer1.initialize(5000000); // 5 seconds in microseconds
-      Timer1.attachInterrupt(medir_rafaga); // Attach the interrupt to medir_rafaga()
+      Timer1.initialize(5000000); // 5 segundos en microsegundos
+      Timer1.attachInterrupt(medir_rafaga);
     }
 
-    // Interrupt routine called every 5 seconds
+    // Rutina de interrupción que se ejecuta cada 5 segundos
     static void medir_rafaga() {
-      // Create temporary instance to use non-static method calcular_velocidad
+      // Usar una instancia temporal para llamar a calcular_velocidad
       VelocidadViento obj;
-      // Calculate gust speed for the current 5-second interval
+      // Calcular velocidad en km/h de la ráfaga actual (2 pulsos = una vuelta)
       float vel_rafaga = obj.calcular_velocidad(contador_viento_rafaga, 5);
-      // Update maximum gust speed if current gust is higher
       if (vel_rafaga > vel_max_racha_comparar) {
         vel_max_racha_comparar = vel_rafaga;
       }
-      // Reset the gust counter
+      // Reinicia el contador de ráfagas
       contador_viento_rafaga = 0;
-      // Increment the cycle counter
+      // Incrementa número de ciclos medidos
       contador_num_rafagas++;
     }
 
-    // Calculate wind speed (km/h) given pulse count and interval (seconds)
+    // Calcula la velocidad (km/h) a partir del contador de pulsos y el intervalo (segundos)
     float calcular_velocidad(int contador, int intervalo) {
-      float circunferencia_cm = (2 * 3.14159) * 9.0;  // Circle circumference in cm (with sensor radius = 9 cm)
-      float rotaciones = contador / 2.0;              // Two pulses equal one full rotation
-      float dist_km = (circunferencia_cm * rotaciones) / 100000.0;  // Convert distance to km
-      float velocidad = (dist_km / intervalo) * 3600.0; // Convert km/s to km/h
-      float velocidad_real = velocidad * 1.18;          // Apply correction factor
-      return velocidad_real;
+      float circunferencia_cm = (2 * 3.14159) * 9.0; // Circunferencia en cm (radio = 9 cm)
+      float rotaciones = contador / 2.0;             // 2 pulsos equivalen a una vuelta
+      float dist_km = (circunferencia_cm * rotaciones) / 100000.0; // de cm a km
+      float velocidad = (dist_km / intervalo) * 3600.0; // de km/s a km/h
+      return velocidad * 1.18;                        // Factor de corrección
     }
 
-    // Calculate the overall average wind speed using all pulses and cycles
+    // Calcula la velocidad media del viento sobre todo el tiempo medido
     void calcular_velocidad_media() {
-      int tiempo = contador_num_rafagas * 5;  // Total measured time in seconds
+      int tiempo = contador_num_rafagas * 5;
       if (tiempo != 0)
         vel_med = calcular_velocidad(contador_viento, tiempo);
       else
         vel_med = 0;
     }
 
-    // Reset values after a measurement cycle; also updates the maximum gust speed
+    // Reinicia contadores y actualiza la ráfaga máxima
     void reiniciar_valores() {
       contador_viento = 0;
       contador_num_rafagas = 0;
@@ -61,60 +65,40 @@ class VelocidadViento {
       vel_max_racha_comparar = 0;
     }
 
-    // Return the formatted average wind speed
+    // Devuelve la velocidad media formateada
     String get_vel_media() {
       return String(round(vel_med));
     }
 
-    // Return the formatted maximum gust speed
+    // Devuelve la velocidad máxima de ráfaga formateada
     String get_vel_max_racha() {
       return String(round(vel_max_racha));
     }
 };
 
-// Initialize static class members
+// Inicialización de miembros estáticos de la clase VelocidadViento
 float VelocidadViento::vel_max_racha_comparar = 0;
 int VelocidadViento::contador_num_rafagas = 0;
 
-// Create an instance of the wind speed class
+// Instancia global para el cálculo de velocidades
 VelocidadViento vw;
 
-// Global flag to track the previous state of the sensor
-bool lastState = false; // false means not currently in impulse range
-
 void setup() {
-  Serial.begin(2000000);         // Initialize serial communication
-  pinMode(A4, INPUT);             // Configure analog pin A4 for anemometer data
+  Serial.begin(2000000);
+  pinMode(2, INPUT);
+  attachInterrupt(digitalPinToInterrupt(2), countPulse, RISING);
 }
 
 void loop() {
-  int sensorValue = analogRead(A4);  // Read analog value from the anemometer sensor
-
-  // Detect transition: only count pulse when going from no impulse to impulse state.
-  // If the sensor reading is 250 or above, assume an impulse.
-  if (sensorValue >= 250) {
-    if (!lastState) {
-      // Rising edge detected: increment both total and gust pulse counters
-      contador_viento++;
-      contador_viento_rafaga++;
-      lastState = true;  // Set flag to indicate impulse state is active
-    }
-  } else {
-    // Sensor value below threshold, reset state to allow new impulses
-    lastState = false;
-  }
-
-  // Calculate the average wind speed based on counted pulses and elapsed time
+  // Calcula la velocidad media con base en los pulsos contados hasta el momento.
   vw.calcular_velocidad_media();
 
-  // Send the sensor reading, average wind speed, and gust speed to the Serial Plotter
-  Serial.print("Anemometer: ");
-  Serial.print(sensorValue);
-  Serial.print("\tWind Avg: ");
+  // Envía por el Serial Monitor la velocidad media y la máxima ráfaga.
+  Serial.print("Viento medio: ");
   Serial.print(vw.get_vel_media());
-  Serial.print(" km/h, Gust: ");
+  Serial.print(" km/h, Racha máxima: ");
   Serial.print(vw.get_vel_max_racha());
   Serial.println(" km/h");
 
-  delay(100); // 100ms delay between readings
+  delay(100);
 }
